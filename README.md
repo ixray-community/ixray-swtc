@@ -1,4 +1,4 @@
-# ADDON_NAME (ver. ..) for IX-Ray Platform
+# SWTC (rel. 1.0) for IX-Ray Platform
 
 ## Overview
 
@@ -7,19 +7,24 @@
 > [!WARNING]
 >
 > Supported only on __IX-Ray Platform__!
+>
+> Not compatible with other weather mods! Before installing, delete user.ltx
 
 ## Requirements
 
 Installation:
 
 1. Install original Stalker Call of Pripyat 1.6.02
-2. Install current version of IX-Ray (minimum ..)
+2. Install current version of IX-Ray (minimum 1.3)
 3. Extract addon archive into the game folder
 4. Start the game and play
 
 Link to the current __IX-Ray__ [release](https://github.com/ixray-team/ixray-1.6-stcop/releases/latest)
 
 ## Contributors
+
+- Drombeys
+- St4lker0k765
 
 ## License
 
@@ -32,19 +37,24 @@ Link to the current __IX-Ray__ [release](https://github.com/ixray-team/ixray-1.6
 > [!WARNING]
 >
 > Поддерживается только на __IX-Ray Platform__!
+>
+> Не совместимо с другими погодными модами! Перед установкой удалите user.ltx
 
 ## Рекомендации
 
 Установка:
 
 1. Установить оригинальный Stalker Call of Pripyat 1.6.02
-2. Установить актуальную версию IX-Ray (минимальная ..)
+2. Установить актуальную версию IX-Ray (минимальная 1.3)
 3. Распакуйте архив аддона в папку с игрой
 4. Запустите игру и играйте
 
 Ссылка на текущую версию __IX-Ray__ [релиз](https://github.com/ixray-team/ixray-1.6-stcop/releases/latest)
 
 ## Контрибьюторы
+
+- Drombeys
+- St4lker0k765
 
 ## Лицензия
 
