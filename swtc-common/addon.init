@@ -1,0 +1,2 @@
+name: swtc-common
+platform: [soc, cs, cop]

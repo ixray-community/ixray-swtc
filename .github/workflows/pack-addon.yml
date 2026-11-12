@@ -8,35 +8,17 @@ on:
             - "**"
         paths:
             - ".github/workflows/**"
-            - "anims/**"
-            - "configs/**"
-            - "levels/**"
-            - "meshes/**"
-            - "scripts/**"
-            - "shaders/**"
-            - "sounds/**"
-            - "spawns/**"
-            - "textures/**"
+            - "swtc-*/**"
             - "README.md"
             - "LICENSE.txt"
-            - "addon.init"
     pull_request:
         branches:
             - "**"
         paths:
             - ".github/workflows/**"
-            - "anims/**"
-            - "configs/**"
-            - "levels/**"
-            - "meshes/**"
-            - "scripts/**"
-            - "shaders/**"
-            - "sounds/**"
-            - "spawns/**"
-            - "textures/**"
+            - "swtc-*/**"
             - "README.md"
             - "LICENSE.txt"
-            - "addon.init"
 
 defaults:
     run:
@@ -59,50 +41,19 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Move files
+            - name: Stage addon modules
               run: |
-                  # Build path
-                  $repository = "${{ github.event.repository.name }}"
-                  $addons = "ixr_addons"
-                  $path = Join-Path $addons $repository
+                  $path = Join-Path "temp/ixr_addons" "${{ github.event.repository.name }}"
                   New-Item -ItemType Directory -Path $path -Force | Out-Null
-
-                  # Move folders
-                  $folders = @(
-                      "anims",
-                      "configs",
-                      "levels",
-                      "meshes",
-                      "scripts",
-                      "shaders",
-                      "sounds",
-                      "spawns",
-                      "textures"
-                  )
-                  foreach ($folder in $folders)
+                  foreach ($module in @("swtc-common", "swtc-soc", "swtc-cs", "swtc-cop"))
                   {
-                      if (Test-Path $folder -ErrorAction SilentlyContinue)
+                      if (!(Test-Path -LiteralPath "$module/addon.init"))
                       {
-                          Move-Item -Path $folder -Destination $path -Force
+                          throw "Missing addon module: $module"
                       }
+                      Copy-Item -LiteralPath $module -Destination $path -Recurse
                   }
-
-                  # Move files
-                  $files = @(
-                      "addon.init"
-                  )
-                  foreach ($file in $files)
-                  {
-                      if (Test-Path $file -ErrorAction SilentlyContinue)
-                      {
-                          Move-Item -Path $file -Destination $path -Force
-                      }
-                  }
-
-                  # Move all
-                  New-Item -ItemType Directory -Path temp -Force | Out-Null
-                  Move-Item -Path "README.md", "LICENSE.txt" -Destination temp -Force
-                  Move-Item -Path ixr_addons -Destination temp
+                  Copy-Item -LiteralPath "README.md", "LICENSE.txt" -Destination temp
 
             - name: Upload addon
               uses: actions/upload-artifact@v4

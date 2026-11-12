@@ -1,0 +1,3 @@
+name: SWTC SOC
+platform: soc
+depends: swtc-common

@@ -1,0 +1,163 @@
+local weather_manager = nil
+local storage_prefix = "swtc_weather_"
+local storage_fields = {"group", "cycle", "cycle_end", "last_hour"}
+
+local function game_hour()
+    -- Use the full game date so sleeping and month/year boundaries work too.
+    local epoch = game.CTime()
+    epoch:set(2012, 1, 1, 0, 0, 0, 0)
+    return math.floor(game.get_game_time():diffSec(epoch) / 3600)
+end
+
+local function read_section(ini, section)
+    local result = {}
+    for i = 0, ini:line_count(section) - 1 do
+        local valid, name, value = ini:r_line(section, i, "", "")
+        if valid then
+            table.insert(result, {name = name, value = value})
+        end
+    end
+    return result
+end
+
+class "WeatherManager"
+function WeatherManager:__init()
+    self.update_time = 0
+    self.update_level = ""
+    self.state = nil
+    self.graphs_ini = ini_file("environment\\dynamic_weather_graphs.ltx")
+    self.weather_pending = false
+end
+
+function WeatherManager:restore_state()
+    if self.state then
+        return
+    end
+    local group = xr_logic.pstor_retrieve(db.actor, storage_prefix .. "group")
+    if not group or not self.graphs_ini:section_exist(group) then
+        return
+    end
+    local state = {}
+    for _, field in ipairs(storage_fields) do
+        state[field] = xr_logic.pstor_retrieve(db.actor, storage_prefix .. field)
+        if state[field] == nil then
+            return
+        end
+    end
+    self.state = state
+end
+
+function WeatherManager:store_state()
+    -- Actor pstor is saved before WeatherManager:save; publish changes immediately.
+    for _, field in ipairs(storage_fields) do
+        xr_logic.pstor_store(db.actor, storage_prefix .. field, self.state[field])
+    end
+end
+
+function WeatherManager:pick_cycle(section, previous)
+    local choices = read_section(self.graphs_ini, section)
+    local total = 0
+    for _, choice in ipairs(choices) do
+        if #choices == 1 or choice.name ~= previous then
+            total = total + tonumber(choice.value)
+        end
+    end
+    local roll = math.random() * total
+    local selected
+    for _, choice in ipairs(choices) do
+        if #choices == 1 or choice.name ~= previous then
+            selected = choice.name
+            roll = roll - tonumber(choice.value)
+            if roll < 0 then
+                break
+            end
+        end
+    end
+    return selected
+end
+
+function WeatherManager:dynamic_weather(graph)
+    local hour = game_hour()
+    self:restore_state()
+    if not self.state or self.state.group ~= graph or hour < self.state.last_hour then
+        self.state = {
+            group = graph,
+            cycle = self:pick_cycle(graph, self.state and self.state.cycle),
+            cycle_end = hour + 1,
+            last_hour = hour
+        }
+    elseif hour >= self.state.cycle_end then
+        self.state.cycle = self:pick_cycle(graph, self.state.cycle)
+        self.state.cycle_end = hour + 1
+    end
+    self.state.last_hour = hour
+    self:store_state()
+    return "default_" .. self.state.cycle
+end
+
+function WeatherManager:reset()
+    local ini = ini_file("game.ltx")
+    local weather = utils.cfg_get_string(ini, level.name(), "weathers", db.actor, false, "", "dynamic_default")
+    local postprocess = utils.cfg_get_string(ini, level.name(), "postprocess", db.actor, false, "")
+    if postprocess ~= nil then
+        level.add_pp_effector(postprocess, 999, true)
+    else
+        level.remove_pp_effector(999)
+    end
+    self.weather_list = xr_logic.parse_condlist(db.actor, level.name(), "weather", weather)
+    self.applied_weather = nil
+    self:select_weather(true)
+end
+
+function WeatherManager:select_weather(now)
+    self.update_level = level.name()
+    local weather = xr_logic.pick_section_from_condlist(db.actor, db.actor, self.weather_list)
+    if self.graphs_ini:section_exist(weather) then
+        weather = self:dynamic_weather(weather)
+    end
+    -- Scripted SoC weather effects must finish before the base cycle is updated.
+    if level.is_wfx_playing() then
+        self.weather_pending = true
+        return
+    end
+    if now or self.weather_pending or weather ~= self.applied_weather then
+        level.set_weather(weather, now)
+        self.applied_weather = weather
+    end
+    self.weather_pending = false
+end
+
+function WeatherManager:load(F)
+    -- Keep the native packet layout; dynamic state travels in actor pstor.
+    self.update_level = F:r_stringZ()
+    self.update_time = F:r_u32()
+    self.update_time = 0
+    self.state = nil
+    self.applied_weather = nil
+end
+
+function WeatherManager:save(F)
+    F:w_stringZ(self.update_level)
+    F:w_u32(self.update_time)
+end
+
+function WeatherManager:update()
+    if self.update_time > time_global() then
+        return
+    end
+    local changed_level = self.update_level ~= level.name()
+    if changed_level then
+        self:reset()
+    else
+        -- Evaluate condition lists too, including changes made by story scripts.
+        self:select_weather(false)
+    end
+    self.update_time = time_global() + 1000
+end
+
+function get_weather_manager()
+    if weather_manager == nil then
+        weather_manager = WeatherManager()
+    end
+    return weather_manager
+end

@@ -1,0 +1,35 @@
+#include "swtc_weather_graphs.ltx"
+
+[weather_periods]
+1_clear = 2, 6
+2_cloudy = 2, 7
+3_rain = 2, 5
+4_storm = 2, 3
+
+[1_clear]
+clear_clean = 0.25
+clear_overcast = 0.25
+clear_alt_clean = 0.25
+clear_alt_overcast = 0.25
+
+[2_cloudy]
+cloudy_light_clean = 0.20
+cloudy_light_overcast = 0.20
+cloudy_dark_clean = 0.15
+cloudy_dark_overcast = 0.15
+cloudy_black_clean_dry = 0.15
+cloudy_black_overcast_dry = 0.15
+
+[3_rain]
+cloudy_light_rain_clean = 0.25
+cloudy_light_rain_overcast = 0.25
+cloudy_black_clean = 0.25
+cloudy_black_overcast = 0.25
+
+[4_storm]
+storm_clean = 0.35
+storm_overcast = 0.35
+storm_overcast_dry = 0.30
+
+[transition]
+cloudy_light_overcast = 1.0
